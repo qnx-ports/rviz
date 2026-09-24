@@ -37,11 +37,11 @@
 
 #include <OgreRoot.h>
 #include <Overlay/OgreOverlaySystem.h>  // NOLINT cpplint cannot handle include order here
-#include <RenderSystems/GL/OgreGLPlugin.h>  // NOLINT cpplint cannot handle include order here
+#include <RenderSystems/GLES2/OgreGLES2Plugin.h>  // NOLINT cpplint cannot handle include order here
 
 #include <QDir>  // NOLINT cpplint cannot handle include order here
 
-#if !defined(__APPLE__) && !defined(_WIN32)
+#if defined(__linux__)
 
 #include <X11/Xutil.h>
 #include <GL/glx.h>
@@ -160,7 +160,7 @@ private:
   bool stereo_supported_;
   static bool force_no_stereo_;
   rviz_rendering::OgreLogging * ogre_logging;
-#if !defined(__APPLE__) && !defined(_WIN32)
+#if defined(__linux__)
   void * dummyDisplay = nullptr;
   void * dummyContext = nullptr;
   XVisualInfo * dummyVisual = nullptr;

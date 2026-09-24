@@ -53,7 +53,7 @@ namespace rviz_rendering
 {
 
 RenderSystem * RenderSystem::instance_ = nullptr;
-int RenderSystem::force_gl_version_ = 0;
+int RenderSystem::force_gl_version_ = 330;
 bool RenderSystem::force_no_stereo_ = false;
 
 // Disable anti aliasing on Windows for now,
@@ -223,9 +223,9 @@ RenderSystem::loadOgrePlugins()
 {
   std::string plugin_prefix = get_ogre_plugin_directory();
 #if defined _WIN32 && !NDEBUG
-  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GL_d");
+  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GLES2_d");
 #else
-  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GL");
+  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GLES2");
 #endif
   ogre_root_->loadPlugin(plugin_prefix + "Codec_STBI");
 }
@@ -237,8 +237,10 @@ RenderSystem::detectGlVersion()
     gl_version_ = force_gl_version_;
   } else {
     Ogre::RenderSystem * renderSys = ogre_root_->getRenderSystem();
+#if 0
     // createRenderSystemCapabilities() called for side effects only
     std::unique_ptr<Ogre::RenderSystemCapabilities>(renderSys->createRenderSystemCapabilities());
+#endif
     const Ogre::RenderSystemCapabilities * caps = renderSys->getCapabilities();
     int major = caps->getDriverVersion().major;
     int minor = caps->getDriverVersion().minor;

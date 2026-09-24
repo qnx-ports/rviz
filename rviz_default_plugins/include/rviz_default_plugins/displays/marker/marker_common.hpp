@@ -39,6 +39,7 @@
 #include <vector>
 #include <utility>
 
+#include <OgreMaterial.h>
 #include <OgreSceneNode.h>
 
 #include "visualization_msgs/msg/marker.hpp"
