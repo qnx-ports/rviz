@@ -41,8 +41,10 @@
 #include <OgreMaterialManager.h>
 #include <OgreTechnique.h>
 
+#include "rviz_rendering/logging.hpp"
 #include "rviz_rendering/material_manager.hpp"
 #include "rviz_rendering/objects/billboard_line.hpp"
+#include "rviz_rendering/render_system.hpp"
 
 namespace rviz_rendering
 {
@@ -85,10 +87,18 @@ Grid::Grid(
   material_ = MaterialManager::createMaterialWithNoLighting(grid_material_name);
 
   setColor(color_);
+
+#if defined(__QNX__)
+  RenderSystem::get()->addSGSceneManager(scene_manager_);
+#endif
 }
 
 Grid::~Grid()
 {
+#if defined(__QNX__)
+  RenderSystem::get()->removeSGSceneManager(scene_manager_);
+#endif
+
   scene_manager_->destroySceneNode(scene_node_);
   scene_manager_->destroyManualObject(manual_object_);
 

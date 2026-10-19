@@ -50,6 +50,24 @@
 #include "rviz_rendering/objects/grid.hpp"
 #include "rviz_rendering/logging.hpp"
 
+// needed for fn getNativeResource
+#include <QGuiApplication>
+#include <QWindow>
+#include <5.15.18/QtGui/qpa/qplatformnativeinterface.h>
+
+static void *getNativeResource(const char *name, QWindow *window)
+{
+  if (name == nullptr || window == nullptr)
+    return nullptr;
+
+  QPlatformNativeInterface *native = QGuiApplication::platformNativeInterface();
+
+  if (native == nullptr)
+    return nullptr;
+
+  return native->nativeResourceForWindow(name, window);
+}
+
 namespace rviz_rendering
 {
 
@@ -205,9 +223,21 @@ RenderWindowImpl::initialize()
 {
   render_system_ = RenderSystem::get();
   double pixel_ratio = parent_->devicePixelRatio();
+
+#if defined(__QNX__)
+  (void) parent_->winId(); // ensure the native-window resources are present
+
+  void *disp = getNativeResource("display", parent_);
+  void *surf = getNativeResource("surface", parent_);
+
+  ogre_render_window_ = render_system_->makeRenderWindow(
+    disp, surf, parent_->width(), parent_->height(), pixel_ratio);
+
+#else
   ogre_render_window_ = render_system_->makeRenderWindow(
     parent_->winId(), parent_->width(), parent_->height(), pixel_ratio);
 
+#endif
   Ogre::Root * ogre_root = render_system_->getOgreRoot();
   if (!ogre_root) {
     auto msg = "Ogre::Root * is unexpectedly nullptr";
@@ -270,7 +300,12 @@ RenderWindowImpl::resize(size_t width, size_t height)
       static_cast<unsigned int>(width),  // NOLINT
       static_cast<unsigned int>(height)  // NOLINT
     );
+
+#if !defined(__QNX__)
+    // next call is supposed to be harmless, but on Wayland it can undo the resize we just did
     ogre_render_window_->windowMovedOrResized();
+
+#endif
   }
   this->renderLater();
 }

@@ -234,4 +234,56 @@ foreach(_lib IN LISTS OGRE_LIBRARIES)
         "INTERFACE_LINK_LIBRARIES" "${_extra_interface_link_libraries}"
     )
   endif()
+  if("OgreRTShaderSystemStatic" STREQUAL ${_lib} OR "OgreRTShaderSystem" STREQUAL ${_lib})
+    find_library(_ogre_rtshader_system_static_library_abs ${_lib}${LIBRARY_MANGLING_SUFFIX}
+      PATHS
+        ${OGRE_LIBRARY_DIRS}
+      NO_DEFAULT_PATH
+      NO_CMAKE_ENVIRONMENT_PATH
+      NO_CMAKE_PATH
+      NO_SYSTEM_ENVIRONMENT_PATH
+      NO_CMAKE_SYSTEM_PATH
+      NO_CMAKE_FIND_ROOT_PATH
+    )
+    find_library(_ogre_rtshader_system_static_library_debug_abs ${_lib}${LIBRARY_MANGLING_SUFFIX}_d
+      PATHS
+        ${OGRE_LIBRARY_DIRS}
+      NO_DEFAULT_PATH
+      NO_CMAKE_ENVIRONMENT_PATH
+      NO_CMAKE_PATH
+      NO_SYSTEM_ENVIRONMENT_PATH
+      NO_CMAKE_SYSTEM_PATH
+      NO_CMAKE_FIND_ROOT_PATH
+    )
+    if(NOT _ogre_rtshader_system_static_library_debug_abs AND NOT WIN32)
+      # On macOS it seems the _d is not used, so just use the normal library name.
+      set(_ogre_rtshader_system_static_library_debug_abs ${_ogre_rtshader_system_static_library_abs})
+    endif()
+
+    add_library(rviz_ogre_vendor::OgreRTShaderSystem UNKNOWN IMPORTED)
+    message(STATUS "rviz_ogre_vendor::OgreRTShaderSystem for IMPORTED_LOCATION_RELEASE: ${_ogre_rtshader_system_static_library_abs}")
+    message(STATUS "rviz_ogre_vendor::OgreRTShaderSystem for IMPORTED_LOCATION_DEBUG: ${_ogre_rtshader_system_static_library_debug_abs}")
+    set_target_properties(rviz_ogre_vendor::OgreRTShaderSystem
+      PROPERTIES
+        IMPORTED_LOCATION_RELEASE ${_ogre_rtshader_system_static_library_abs}
+        IMPORTED_LOCATION_DEBUG ${_ogre_rtshader_system_static_library_debug_abs}
+    )
+
+    set_property(TARGET rviz_ogre_vendor::OgreRTShaderSystem
+      PROPERTY
+        INTERFACE_INCLUDE_DIRECTORIES ${OGRE_INCLUDE_DIRS}
+    )
+    if(_ogre_rtshader_system_static_library_abs)
+      set_property(TARGET rviz_ogre_vendor::OgreRTShaderSystem APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+    endif()
+    if(_ogre_rtshader_system_static_library_debug_abs)
+      set_property(TARGET rviz_ogre_vendor::OgreRTShaderSystem APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+    endif()
+
+    set(_extra_interface_link_libraries rviz_ogre_vendor::OgreMain)
+    set_target_properties(rviz_ogre_vendor::OgreRTShaderSystem
+      PROPERTIES
+        "INTERFACE_LINK_LIBRARIES" "${_extra_interface_link_libraries}"
+    )
+  endif()
 endforeach()

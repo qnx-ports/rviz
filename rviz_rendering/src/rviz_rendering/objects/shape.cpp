@@ -44,6 +44,7 @@
 
 #include "rviz_rendering/logging.hpp"
 #include "rviz_rendering/material_manager.hpp"
+#include "rviz_rendering/render_system.hpp"
 
 namespace rviz_rendering
 {
@@ -108,10 +109,18 @@ Shape::Shape(Type type, Ogre::SceneManager * scene_manager, Ogre::SceneNode * pa
   if (entity_) {
     entity_->setMaterialName(material_name_);
   }
+
+#if defined(__QNX__)
+  RenderSystem::get()->addSGSceneManager(scene_manager_);
+#endif
 }
 
 Shape::~Shape()
 {
+#if defined(__QNX__)
+  RenderSystem::get()->removeSGSceneManager(scene_manager_);
+#endif
+
   scene_manager_->destroySceneNode(scene_node_);
   scene_manager_->destroySceneNode(offset_node_);
 

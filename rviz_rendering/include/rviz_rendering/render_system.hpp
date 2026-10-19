@@ -46,6 +46,13 @@
 #include <X11/Xutil.h>
 #include <GL/glx.h>
 
+#elif defined(__QNX__)
+
+#include <RTShaderSystem/OgreRTShaderSystem.h>  // NOLINT cpplint cannot handle include order here
+#include <OgreMaterialManager.h>  // NOLINT cpplint cannot handle include order here
+#include <map>  // NOLINT cpplint cannot handle include order here
+#include <mutex>  // NOLINT cpplint cannot handle include order here
+
 #endif
 
 #include "rviz_rendering/visibility_control.hpp"
@@ -54,19 +61,59 @@
 namespace rviz_rendering
 {
 
+#if defined(__QNX__)
+
+class RVIZ_RENDERING_PUBLIC SGTechniqueResolverListener
+  : public Ogre::MaterialManager::Listener
+{
+public:
+  explicit SGTechniqueResolverListener(
+    Ogre::RTShader::ShaderGenerator* pShaderGenerator);
+
+  Ogre::Technique * handleSchemeNotFound(
+    unsigned short scheme_index,  // NOLINT: Ogre decides the use of unsigned short
+    const Ogre::String & scheme_name,
+    Ogre::Material * original_material,
+    unsigned short lod_index,  // NOLINT: Ogre decides the use of unsigned short
+    const Ogre::Renderable * rend) override;
+
+  bool afterIlluminationPassesCreated(Ogre::Technique* tech) override;
+  bool beforeIlluminationPassesCleared(Ogre::Technique* tech) override;
+
+protected:
+  Ogre::RTShader::ShaderGenerator* shaderGenerator_;
+};
+
+#endif
+
 class RVIZ_RENDERING_PUBLIC RenderSystem
 {
 public:
+#if !defined(__QNX__)
 #if defined(__APPLE__) || defined(_WIN32)
   typedef size_t WindowIDType;
 #else
   typedef unsigned long WindowIDType;  // NOLINT: we need to use C longs here
+#endif
 #endif
 
   static
   RenderSystem *
   get();
 
+#if defined(__QNX__)
+  Ogre::RenderWindow *
+  makeRenderWindow(
+    void * display,
+    void * surface,
+    unsigned int width,
+    unsigned int height,
+    double pixel_ratio = 1.0);
+
+  void addSGSceneManager(Ogre::SceneManager* sceneMgr);
+  void removeSGSceneManager(Ogre::SceneManager* sceneMgr);
+
+#else
   Ogre::RenderWindow *
   makeRenderWindow(
     WindowIDType window_id,
@@ -74,6 +121,7 @@ public:
     unsigned int height,
     double pixel_ratio = 1.0);
 
+#endif
   Ogre::Root *
   getOgreRoot();
 
@@ -117,9 +165,6 @@ private:
   RenderSystem();
 
   void
-  setupDummyWindowId();
-
-  void
   loadOgrePlugins();
 
   // helper for makeRenderWindow()
@@ -147,9 +192,6 @@ private:
 
   static RenderSystem * instance_;
 
-  // ID for a dummy window of size 1x1, used to keep Ogre happy.
-  WindowIDType dummy_window_id_;
-
   Ogre::Root * ogre_root_;
   Ogre::OverlaySystem * ogre_overlay_system_;
 
@@ -160,10 +202,13 @@ private:
   bool stereo_supported_;
   static bool force_no_stereo_;
   rviz_rendering::OgreLogging * ogre_logging;
-#if defined(__linux__)
-  void * dummyDisplay = nullptr;
-  void * dummyContext = nullptr;
-  XVisualInfo * dummyVisual = nullptr;
+#if defined(__QNX__)
+  Ogre::RTShader::ShaderGenerator* shaderGenerator_;
+  SGTechniqueResolverListener* materialMgrListener_;
+  std::map< Ogre::SceneManager*, unsigned > sgscene_ref_count_;
+  std::mutex sgscene_lock_;
+
+  bool initialiseRTShaderSystem();
 #endif
 };
 

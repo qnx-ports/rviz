@@ -40,6 +40,9 @@
 #include <OgreRenderWindow.h>
 #include <OgreLogManager.h>
 #include <OgreMeshManager.h>
+#if defined(__QNX__)
+#include <OgreTechnique.h>
+#endif
 
 #include "ament_index_cpp/get_resource.hpp"
 #include "ament_index_cpp/get_resources.hpp"
@@ -52,8 +55,134 @@
 namespace rviz_rendering
 {
 
+#if defined(__QNX__)
+SGTechniqueResolverListener::SGTechniqueResolverListener(
+  Ogre::RTShader::ShaderGenerator* pShaderGenerator)
+{
+  shaderGenerator_ = pShaderGenerator;
+}
+
+Ogre::Technique * SGTechniqueResolverListener::handleSchemeNotFound(
+  unsigned short scheme_index,
+  const Ogre::String & scheme_name,
+  Ogre::Material * original_material,
+  unsigned short lod_index,
+  const Ogre::Renderable * rend)
+{
+  (void) scheme_index;
+  (void) lod_index;
+  (void) rend;
+
+  if (!shaderGenerator_->hasRenderState(scheme_name)) {
+    return nullptr;
+  }
+
+  bool techniqueCreated = shaderGenerator_->createShaderBasedTechnique(
+    *original_material,
+    Ogre::MaterialManager::DEFAULT_SCHEME_NAME,
+    scheme_name);
+
+  if (!techniqueCreated) {
+    return nullptr;
+  }
+
+  // Force creating the shaders for the generated technique.
+  shaderGenerator_->validateMaterial(scheme_name, *original_material);
+
+  // Grab the generated technique.
+  for (auto *tech : original_material->getTechniques()) {
+    if (tech->getSchemeName() == scheme_name) {
+      return tech;
+    }
+  }
+
+  return nullptr;
+}
+
+bool SGTechniqueResolverListener::beforeIlluminationPassesCleared(Ogre::Technique *tech)
+{
+  if (shaderGenerator_->hasRenderState(tech->getSchemeName())) {
+    Ogre::Material* mat = tech->getParent();
+
+    shaderGenerator_->invalidateMaterialIlluminationPasses(
+      tech->getSchemeName(),
+      mat->getName(),
+      mat->getGroup());
+
+    return true;
+  }
+
+  return false;
+}
+
+bool SGTechniqueResolverListener::afterIlluminationPassesCreated(Ogre::Technique *tech)
+{
+  if (shaderGenerator_->hasRenderState(tech->getSchemeName())) {
+    Ogre::Material* mat = tech->getParent();
+
+    shaderGenerator_->validateMaterialIlluminationPasses(
+      tech->getSchemeName(),
+      mat->getName(),
+      mat->getGroup());
+
+    return true;
+  }
+
+  return false;
+}
+
+bool RenderSystem::initialiseRTShaderSystem()
+{
+  if (Ogre::RTShader::ShaderGenerator::initialize()) {
+    shaderGenerator_ = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+
+    if (materialMgrListener_ == nullptr) {
+      materialMgrListener_ = new SGTechniqueResolverListener(shaderGenerator_);
+      Ogre::MaterialManager::getSingleton().addListener(materialMgrListener_);
+    }
+
+    return true;
+  }
+  return false;
+}
+
+void RenderSystem::addSGSceneManager(Ogre::SceneManager* sceneMgr)
+{
+  std::lock_guard guard(sgscene_lock_);
+
+  std::map< Ogre::SceneManager*, unsigned >::iterator it = sgscene_ref_count_.find(sceneMgr);
+  if (it == sgscene_ref_count_.end()) {
+    sgscene_ref_count_.emplace(sceneMgr, 1u);
+    shaderGenerator_->addSceneManager(sceneMgr);
+  } else {
+    it->second++;
+  }
+}
+
+void RenderSystem::removeSGSceneManager(Ogre::SceneManager* sceneMgr)
+{
+  std::lock_guard guard(sgscene_lock_);
+
+  std::map< Ogre::SceneManager*, unsigned >::iterator it = sgscene_ref_count_.find(sceneMgr);
+  if (it != sgscene_ref_count_.end()) {
+    if (--it->second == 0) {
+      sgscene_ref_count_.erase(it);
+      shaderGenerator_->removeSceneManager(sceneMgr);
+    }
+  } else {
+    const char * msg = "removeSGSceneManager called with a non-existing scene manager";
+    RVIZ_RENDERING_LOG_ERROR(msg);
+    throw std::runtime_error(msg);
+  }
+}
+
+#endif
 RenderSystem * RenderSystem::instance_ = nullptr;
+#if defined(__QNX__)
 int RenderSystem::force_gl_version_ = 330;
+#else
+int RenderSystem::force_gl_version_ = 0;
+#endif
 bool RenderSystem::force_no_stereo_ = false;
 
 // Disable anti aliasing on Windows for now,
@@ -94,18 +223,6 @@ void RenderSystem::Destroy()
   }
   delete this->ogre_logging;
 
-#if __linux__
-  if (this->dummyDisplay) {
-    Display * x11Display = static_cast<Display *>(this->dummyDisplay);
-    GLXContext x11Context = static_cast<GLXContext>(this->dummyContext);
-    glXDestroyContext(x11Display, x11Context);
-    XDestroyWindow(x11Display, this->dummy_window_id_);
-    XCloseDisplay(x11Display);
-    this->dummyDisplay = nullptr;
-    XFree(this->dummyVisual);
-    this->dummyVisual = nullptr;
-  }
-#endif
   instance_ = 0;
 }
 
@@ -153,24 +270,24 @@ RenderSystem::forceNoStereo()
   RVIZ_RENDERING_LOG_INFO("Forcing Stereo OFF");
 }
 
+#if defined(__QNX__)
 RenderSystem::RenderSystem()
-: dummy_window_id_(0), ogre_overlay_system_(nullptr), stereo_supported_(false)
+: ogre_overlay_system_(nullptr), stereo_supported_(false), shaderGenerator_(nullptr), materialMgrListener_(nullptr)
+#else
+RenderSystem::RenderSystem()
+: ogre_overlay_system_(nullptr), stereo_supported_(false)
+#endif
 {
   this->ogre_logging = rviz_rendering::OgreLogging::get();
   this->ogre_logging->configureLogging();
 
   setResourceDirectory();
   setPluginDirectory();
-  setupDummyWindowId();
   ogre_root_ = new Ogre::Root(get_resource_directory() + "/ogre_media/plugins.cfg");
   ogre_overlay_system_ = new Ogre::OverlaySystem();
   loadOgrePlugins();
   setupRenderSystem();
   ogre_root_->initialise(false);
-  makeRenderWindow(dummy_window_id_, 1, 1);
-  detectGlVersion();
-  setupResources();
-  Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 }
 
 void
@@ -182,50 +299,17 @@ RenderSystem::prepareOverlays(Ogre::SceneManager * scene_manager)
 }
 
 void
-RenderSystem::setupDummyWindowId()
-{
-  this->dummy_window_id_ = 0;
-#ifdef __linux__
-  this->dummyDisplay = XOpenDisplay(0);
-  if (!this->dummyDisplay) {
-    std::cerr << "Unable to open display: " << XDisplayName(0) << std::endl;
-    return;
-  }
-  Display * x11Display = static_cast<Display *>(this->dummyDisplay);
-
-  int screen = DefaultScreen(x11Display);
-
-  int attribList[] = {GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 16,
-    GLX_STENCIL_SIZE, 8, None};
-
-  this->dummyVisual = glXChooseVisual(x11Display, screen, attribList);
-  if (!this->dummyVisual) {
-    std::cerr << "Unable to create glx visual" << std::endl;
-    return;
-  }
-
-  this->dummy_window_id_ = XCreateSimpleWindow(
-    x11Display, RootWindow(this->dummyDisplay, screen), 0, 0, 1, 1, 0, 0, 0);
-
-  this->dummyContext = glXCreateContext(x11Display, this->dummyVisual, nullptr, 1);
-  GLXContext x11Context = static_cast<GLXContext>(this->dummyContext);
-  if (!this->dummyContext) {
-    std::cerr << "Unable to create glx context" << std::endl;
-    return;
-  }
-
-  glXMakeCurrent(x11Display, this->dummy_window_id_, x11Context);
-#endif
-}
-
-void
 RenderSystem::loadOgrePlugins()
 {
   std::string plugin_prefix = get_ogre_plugin_directory();
-#if defined _WIN32 && !NDEBUG
-  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GLES2_d");
-#else
+#if defined(__QNX__)
   ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GLES2");
+#else
+#if defined _WIN32 && !NDEBUG
+  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GL_d");
+#else
+  ogre_root_->loadPlugin(plugin_prefix + "RenderSystem_GL");
+#endif
 #endif
   ogre_root_->loadPlugin(plugin_prefix + "Codec_STBI");
 }
@@ -236,15 +320,15 @@ RenderSystem::detectGlVersion()
   if (force_gl_version_) {
     gl_version_ = force_gl_version_;
   } else {
+#if !defined(__QNX__)
     Ogre::RenderSystem * renderSys = ogre_root_->getRenderSystem();
-#if 0
     // createRenderSystemCapabilities() called for side effects only
     std::unique_ptr<Ogre::RenderSystemCapabilities>(renderSys->createRenderSystemCapabilities());
-#endif
     const Ogre::RenderSystemCapabilities * caps = renderSys->getCapabilities();
     int major = caps->getDriverVersion().major;
     int minor = caps->getDriverVersion().minor;
     gl_version_ = major * 100 + minor * 10;
+#endif
   }
 
   switch (gl_version_) {
@@ -342,6 +426,8 @@ RenderSystem::setPluginDirectory()
 void
 RenderSystem::setupResources()
 {
+  RVIZ_RENDERING_LOG_INFO_STREAM("________________ " << __PRETTY_FUNCTION__ << " 01");
+
   std::string rviz_path = get_resource_directory();
   Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
     rviz_path + "/ogre_media", "FileSystem", "rviz_rendering");
@@ -380,7 +466,27 @@ RenderSystem::setupResources()
   }
 
   addAdditionalResourcesFromAmentIndex();
+
+#if defined(__QNX__)
+  // cd /opt/ros/jazzy/share/rviz_rendering/ogre_media/
+  // sudo ln -s ../../../opt/rviz_ogre_vendor/share/OGRE-14.6/Media/Main/
+  // sudo ln -s ../../../opt/rviz_ogre_vendor/share/OGRE-14.6/Media/RTShaderLib
+
+  Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
+    rviz_path + "/ogre_media/RTShaderLib", "FileSystem", "rviz_rendering");
+  Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
+    rviz_path + "/ogre_media/Main", "FileSystem", "rviz_rendering");
+
+  if (!RenderSystem::initialiseRTShaderSystem()) {
+    std::string s = "Could not initialize OgreRTShaderSystem";
+    RVIZ_RENDERING_LOG_ERROR(s);
+    throw std::runtime_error(s);
+  }
+
+#endif
   MaterialManager::createDefaultMaterials();
+
+  RVIZ_RENDERING_LOG_INFO_STREAM("________________ " << __PRETTY_FUNCTION__ << " 02");
 }
 
 void RenderSystem::addAdditionalResourcesFromAmentIndex() const
@@ -436,12 +542,24 @@ int checkBadDrawable(Display * display, XErrorEvent * error)
 }
 #endif  // __linux__
 
+#if defined(__QNX__)
+Ogre::RenderWindow *
+RenderSystem::makeRenderWindow(
+  void * display,
+  void * surface,
+  unsigned int width,
+  unsigned int height,
+  double pixel_ratio)
+
+#else
 Ogre::RenderWindow *
 RenderSystem::makeRenderWindow(
   WindowIDType window_id,
   unsigned int width,
   unsigned int height,
   double pixel_ratio)
+
+#endif
 {
   static int window_counter = 0;  // Every RenderWindow needs a unique name, oy.
 
@@ -450,19 +568,20 @@ RenderSystem::makeRenderWindow(
 
   params["currentGLContext"] = Ogre::String("false");
 
+#if defined(__QNX__)
+  params["externalWlDisplay"] = Ogre::StringConverter::toString(size_t(display));
+  params["externalWlSurface"] = Ogre::StringConverter::toString(size_t(surface));
+
+#else
   if (window_id != 0) {
     params["externalWindowHandle"] = Ogre::StringConverter::toString(window_id);
   }
   params["parentWindowHandle"] = Ogre::StringConverter::toString(window_id);
 
+#endif
   // Scale rendering window correctly on Windows
   params["left"] = std::to_string(0);
   params["top"] = std::to_string(0);
-
-  // Hide dummy window borders on Windows
-  if (width <= 1) {
-    params["border"] = "none";
-  }
 
   // params["externalGLControl"] = Ogre::String("true");
 
@@ -480,8 +599,7 @@ RenderSystem::makeRenderWindow(
   params["contentScalingFactor"] = std::to_string(pixel_ratio);
 
   std::ostringstream stream;
-  stream << "OgreWindow(" << window_counter++ << ")";
-
+  stream << "OgreWindow(" << window_counter << ")";
 
   // don't bother trying stereo if Ogre does not support it.
 #if !OGRE_STEREO_ENABLE
@@ -521,17 +639,16 @@ RenderSystem::makeRenderWindow(
     throw std::runtime_error(msg);
   }
 
-  // Hide dummy window immediately on Windows
-  if (width <= 1) {
-    window->setHidden(true);
-  } else {
-    window->setVisible(true);
-  }
-
   stereo_supported_ = is_stereo;
 
   RVIZ_RENDERING_LOG_INFO_STREAM(
     "Stereo is " << (stereo_supported_ ? "SUPPORTED" : "NOT SUPPORTED"));
+
+  if (window_counter++ == 0) {
+    detectGlVersion();
+    setupResources();
+    Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+  }
 
   return window;
 }
@@ -550,6 +667,10 @@ RenderSystem::tryMakeRenderWindow(
 #ifdef __linux___
   old_error_handler = XSetErrorHandler(&checkBadDrawable);
 #endif
+
+  for (Ogre::NameValuePairList::const_iterator it = params->begin(); it != params->end(); it++) {
+      RVIZ_RENDERING_LOG_INFO_STREAM(it->first << "=" << it->second);
+  }
 
   while (window == nullptr && attempts++ < max_attempts) {
     try {

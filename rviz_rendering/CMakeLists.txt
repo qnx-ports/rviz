@@ -103,6 +103,7 @@ target_link_libraries(rviz_rendering PUBLIC
   Qt5::Widgets
   rviz_ogre_vendor::OgreMain
   rviz_ogre_vendor::OgreOverlay
+  rviz_ogre_vendor::OgreRTShaderSystem
 )
 if(TARGET Eigen3::Eigen)
   # TODO(sloretz) require target to exist when https://github.com/ros2/choco-packages/issues/19 is addressed

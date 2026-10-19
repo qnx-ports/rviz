@@ -43,7 +43,9 @@
 #include <string>
 #include <sstream>
 
+#include "rviz_rendering/logging.hpp"
 #include "rviz_rendering/material_manager.hpp"
+#include "rviz_rendering/render_system.hpp"
 
 static const uint32_t MAX_ELEMENTS = (65536 / 4);
 
@@ -72,10 +74,18 @@ BillboardLine::BillboardLine(Ogre::SceneManager * scene_manager, Ogre::SceneNode
 
   setNumLines(num_lines_);
   setMaxPointsPerLine(max_points_per_line_);
+
+#if defined(__QNX__)
+  RenderSystem::get()->addSGSceneManager(scene_manager_);
+#endif
 }
 
 BillboardLine::~BillboardLine()
 {
+#if defined(__QNX__)
+  RenderSystem::get()->removeSGSceneManager(scene_manager_);
+#endif
+
   for (auto & chain : chain_containers_) {
     scene_manager_->destroyBillboardChain(chain);
   }

@@ -36,6 +36,24 @@
 #include "rviz_rendering/render_window.hpp"
 #include "rviz_rendering/render_system.hpp"
 
+// needed for fn getNativeResource
+#include <QGuiApplication>
+#include <QWindow>
+#include <5.15.18/QtGui/qpa/qplatformnativeinterface.h>
+
+static void *getNativeResource(const char *name, QWindow *window)
+{
+  if (name == nullptr || window == nullptr)
+    return nullptr;
+
+  QPlatformNativeInterface *native = QGuiApplication::platformNativeInterface();
+
+  if (native == nullptr)
+    return nullptr;
+
+  return native->nativeResourceForWindow(name, window);
+}
+
 namespace rviz_default_plugins
 {
 
@@ -57,7 +75,18 @@ void OgreTestingEnvironment::setUpRenderSystem()
 Ogre::RenderWindow * OgreTestingEnvironment::createOgreRenderWindow()
 {
   auto test = new rviz_rendering::RenderWindow();
+
+#if defined(__QNX__)
+  (void) test->winId(); // ensure the native-window resources are present
+
+  void *disp = getNativeResource("display", test);
+  void *surf = getNativeResource("surface", test);
+
+  return rviz_rendering::RenderSystem::get()->makeRenderWindow(disp, surf, 10, 10, 1.0);
+
+#else
   return rviz_rendering::RenderSystem::get()->makeRenderWindow(test->winId(), 10, 10, 1.0);
+#endif
 }
 
 }  // end namespace rviz_default_plugins

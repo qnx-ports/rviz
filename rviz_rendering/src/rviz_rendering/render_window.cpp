@@ -193,7 +193,6 @@ RenderWindow::exposeEvent(QExposeEvent * expose_event)
   }
 }
 
-
 void
 RenderWindowOgreAdapter::setOgreCamera(RenderWindow * render_window, Ogre::Camera * ogre_camera)
 {

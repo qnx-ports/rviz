@@ -37,7 +37,9 @@
 #include <OgreMaterialManager.h>
 #include <OgreTechnique.h>
 
+#include "rviz_rendering/logging.hpp"
 #include "rviz_rendering/material_manager.hpp"
+#include "rviz_rendering/render_system.hpp"
 
 namespace rviz_rendering
 {
@@ -62,10 +64,18 @@ Line::Line(Ogre::SceneManager * manager, Ogre::SceneNode * parent_node)
   manual_object_material_->getTechnique(0)->getPass(0)->setAmbient(1, 1, 1);
 
   scene_node_->attachObject(manual_object_);
+
+#if defined(__QNX__)
+  RenderSystem::get()->addSGSceneManager(scene_manager_);
+#endif
 }
 
 Line::~Line()
 {
+#if defined(__QNX__)
+  RenderSystem::get()->removeSGSceneManager(scene_manager_);
+#endif
+
   if (scene_node_->getParentSceneNode()) {
     scene_node_->getParentSceneNode()->removeChild(scene_node_);
   }
