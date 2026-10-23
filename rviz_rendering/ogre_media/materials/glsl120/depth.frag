@@ -1,11 +1,13 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
+
+#include "pack_depth.frag"
 
 // Passes on the packed depth value
 
-// includes
-vec4 packDepth( );
-
-void main()
+MAIN_PARAMETERS
+IN(float depth, 0)
+MAIN_DECLARATION
 {
-  gl_FragColor = packDepth();
+  gl_FragColor = packDepth(depth);
 }

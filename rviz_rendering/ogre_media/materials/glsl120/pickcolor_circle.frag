@@ -1,13 +1,15 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
 
-// Draws a circle in the pick color 
+#include "circle_impl.frag"
 
-//includes:
-void circleImpl( vec4 color, float ax, float ay );
+// Draws a circle in the pick color
 
 uniform vec4 pick_color;
 
-void main()
+MAIN_PARAMETERS
+IN(vec2 uv0, 2)
+MAIN_DECLARATION
 {
-  circleImpl( pick_color, gl_TexCoord[0].x-0.5, gl_TexCoord[0].y-0.5 );
+  circleImpl(pick_color, uv0.x - 0.5, uv0.y - 0.5);
 }

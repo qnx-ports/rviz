@@ -1,11 +1,14 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
+
+#include "circle_impl.frag"
 
 // Draws a circle in the fragment color
 
-//includes:
-void circleImpl( vec4 color, float ax, float ay );
-
-void main()
+MAIN_PARAMETERS
+IN(vec4 color, COLOR)
+IN(vec2 uv0, TEXCOORD0)
+MAIN_DECLARATION
 {
-  circleImpl( gl_Color, gl_TexCoord[0].x-0.5, gl_TexCoord[0].y-0.5 );
+  circleImpl(color, uv0.x - 0.5, uv0.y - 0.5);
 }

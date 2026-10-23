@@ -1,12 +1,17 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
+
+#include "pass_depth.vert"
 
 // Minimal depth passthrough shader
 
 uniform mat4 worldviewproj_matrix;
 
-void passDepth( vec4 pos );
-
-void main() {
-    gl_Position = worldviewproj_matrix * gl_Vertex;
-    passDepth( gl_Vertex );
+MAIN_PARAMETERS
+IN(vec4 pos, POSITION)
+OUT(float depth, 0)
+MAIN_DECLARATION
+{
+    gl_Position = worldviewproj_matrix * pos;
+    depth = passDepth(pos);
 }

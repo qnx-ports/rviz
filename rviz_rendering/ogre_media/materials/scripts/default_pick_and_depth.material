@@ -7,6 +7,7 @@ material rviz/DefaultPickAndDepth
       lighting off
       scene_blend one zero
       cull_hardware clockwise
+      vertex_program_ref rviz/glsl120/basic.vert {}
       fragment_program_ref rviz/glsl120/pickcolor.frag {}
     }
   }
@@ -18,6 +19,7 @@ material rviz/DefaultPickAndDepth
       lighting off
       scene_blend one zero
       cull_hardware clockwise
+      vertex_program_ref rviz/glsl120/basic.vert {}
       fragment_program_ref rviz/glsl120/black.frag {}
     }
   }
@@ -40,6 +42,7 @@ material rviz/DefaultPickAndDepth
       lighting off
       scene_blend one zero
       cull_hardware none
+      vertex_program_ref rviz/glsl120/basic.vert {}
       fragment_program_ref rviz/glsl120/pickcolor.frag {}
     }
   }
@@ -51,6 +54,7 @@ material rviz/DefaultPickAndDepth
       lighting off
       scene_blend one zero
       cull_hardware none
+      vertex_program_ref rviz/glsl120/basic.vert {}
       fragment_program_ref rviz/glsl120/black.frag {}
     }
   }

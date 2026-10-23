@@ -1,14 +1,18 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
 
 // Draws an 8-bit image using RGB values from a 256x1 palette texture.
 // This vertex shader just passes through the UV texture coordinates.
 // I'm not sure if it is necessary or not.
 
-attribute vec4 uv0;
-varying vec2 UV;
+uniform mat4 worldviewproj_matrix;
 
-void main()
+MAIN_PARAMETERS
+IN(vec4 pos, POSITION)
+IN(vec2 uv0, TEXCOORD0)
+OUT(vec2 UV, 0)
+MAIN_DECLARATION
 {
-  gl_Position = ftransform();
+  gl_Position = worldviewproj_matrix * pos;
   UV = vec2(uv0);
 }

@@ -1,8 +1,11 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
 
 // Passes the fragment color unchanged 
 
-void main()
+MAIN_PARAMETERS
+IN(vec4 color, COLOR)
+MAIN_DECLARATION
 {
-  gl_FragColor = gl_Color;
+  gl_FragColor = color;
 }

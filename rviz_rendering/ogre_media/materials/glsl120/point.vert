@@ -1,4 +1,9 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
+
+#ifdef WITH_DEPTH
+#include "pass_depth.vert"
+#endif
 
 // Generic vertex shader for point sprites
 // sets position and point size.
@@ -7,18 +12,23 @@
 uniform mat4 worldviewproj_matrix;
 uniform vec4 size;
 
+MAIN_PARAMETERS
+IN(vec4 pos, POSITION)
+IN(vec4 icolor, COLOR)
+IN(vec2 iuv, TEXCOORD0)
 #ifdef WITH_DEPTH
-  //include:
-  void passDepth( vec4 pos );
+OUT(float depth, 0)
 #endif
-
-void main()
+OUT(vec4 ocolor, 1)
+OUT(vec2 ouv, 2)
+MAIN_DECLARATION
 {
-  gl_Position = worldviewproj_matrix * gl_Vertex;
-  gl_FrontColor = gl_Color;
+  gl_Position = worldviewproj_matrix * pos;
   gl_PointSize = size.x;
+  ocolor = icolor;
+  ouv = iuv;
 
 #ifdef WITH_DEPTH
-  passDepth( gl_Vertex );
+  depth = passDepth(pos);
 #endif
 }
