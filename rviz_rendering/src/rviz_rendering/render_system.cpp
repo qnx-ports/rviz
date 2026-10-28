@@ -562,6 +562,7 @@ RenderSystem::makeRenderWindow(
 #endif
 {
   static int window_counter = 0;  // Every RenderWindow needs a unique name, oy.
+  static std::mutex resource_init_lock;
 
   Ogre::NameValuePairList params;
   Ogre::RenderWindow * window = nullptr;
@@ -644,10 +645,16 @@ RenderSystem::makeRenderWindow(
   RVIZ_RENDERING_LOG_INFO_STREAM(
     "Stereo is " << (stereo_supported_ ? "SUPPORTED" : "NOT SUPPORTED"));
 
-  if (window_counter++ == 0) {
-    detectGlVersion();
-    setupResources();
-    Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+  // on-demand resource init: don't just init ogre resources once, but also
+  // block other makeRenderWindow calls till resource initialization is done
+  {
+    std::lock_guard guard(resource_init_lock);
+
+    if (window_counter++ == 0) {
+      detectGlVersion();
+      setupResources();
+      Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+    }
   }
 
   return window;
