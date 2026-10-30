@@ -40,6 +40,7 @@
 #include <OgreRenderWindow.h>
 #include <OgreLogManager.h>
 #include <OgreMeshManager.h>
+#include <OgreFileSystemLayer.h>
 #if defined(__QNX__)
 #include <OgreTechnique.h>
 #endif
@@ -135,6 +136,14 @@ bool RenderSystem::initialiseRTShaderSystem()
 {
   if (Ogre::RTShader::ShaderGenerator::initialize()) {
     shaderGenerator_ = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+
+    const Ogre::String cache_path = "/var/home/qnx/.cache/ogre_shader_cache";
+
+    if (!Ogre::FileSystemLayer::fileExists(cache_path)) {
+      Ogre::FileSystemLayer::createDirectory(cache_path);
+    }
+
+    shaderGenerator_->setShaderCachePath(cache_path);
 
     if (materialMgrListener_ == nullptr) {
       materialMgrListener_ = new SGTechniqueResolverListener(shaderGenerator_);
