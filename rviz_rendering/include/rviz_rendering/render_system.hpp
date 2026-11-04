@@ -37,7 +37,11 @@
 
 #include <OgreRoot.h>
 #include <Overlay/OgreOverlaySystem.h>  // NOLINT cpplint cannot handle include order here
+#if defined(__QNX__)
 #include <RenderSystems/GLES2/OgreGLES2Plugin.h>  // NOLINT cpplint cannot handle include order here
+#else
+#include <RenderSystems/GL/OgreGLPlugin.h>  // NOLINT cpplint cannot handle include order here
+#endif
 
 #include <QDir>  // NOLINT cpplint cannot handle include order here
 
