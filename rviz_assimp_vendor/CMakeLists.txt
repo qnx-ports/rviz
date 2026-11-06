@@ -32,8 +32,8 @@ endif()
 
 ament_vendor(assimp_vendor
   SATISFIED ${assimp_FOUND}
-  VCS_URL /var/home/qnx/proj/assimp
-  VCS_TYPE path
+  VCS_URL https://github.com/qnx-ports/assimp.git
+  VCS_VERSION rviz_14_1_19_qnx-r0
   CMAKE_ARGS
     -DASSIMP_BUILD_ASSIMP_TOOLS:BOOL=OFF
     -DASSIMP_BUILD_TESTS:BOOL=OFF

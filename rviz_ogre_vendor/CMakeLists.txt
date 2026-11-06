@@ -82,8 +82,8 @@ if(APPLE)
 endif()
 
 ament_vendor(ogre_vendor
-  VCS_URL /var/home/qnx/proj/ogre
-  VCS_TYPE path
+  VCS_URL https://github.com/qnx-ports/ogre.git
+  VCS_VERSION rviz_14_1_19_qnx-r0
   CMAKE_ARGS
     -DOGRE_STATIC:BOOL=OFF
     -DOGRE_INSTALL_PDB:BOOL=OFF
