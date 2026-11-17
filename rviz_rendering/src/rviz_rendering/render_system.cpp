@@ -36,6 +36,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 #include <OgreRenderWindow.h>
 #include <OgreLogManager.h>
@@ -137,7 +138,8 @@ bool RenderSystem::initialiseRTShaderSystem()
   if (Ogre::RTShader::ShaderGenerator::initialize()) {
     shaderGenerator_ = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
 
-    const Ogre::String cache_path = "/var/home/qnx/.cache/ogre_shader_cache";
+    const Ogre::String home(getenv("HOME"));
+    const Ogre::String cache_path = home.empty() ? "/tmp/ogre_shader_cache" : home + "/.cache/ogre_shader_cache";
 
     if (!Ogre::FileSystemLayer::fileExists(cache_path)) {
       Ogre::FileSystemLayer::createDirectory(cache_path);
