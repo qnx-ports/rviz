@@ -20,6 +20,9 @@ MAIN_DECLARATION
   vec3 col = mix(vec3(0.8, 0.8, 0.8) * vColor.xyz, vColor.xyz, a);
 
   col = col + col * highlight.xyz;
-  
+
+  if (a <= 0.0)
+    discard;
+
   gl_FragColor = vec4(col, alpha * ceil(a) * vColor.a);
 }
