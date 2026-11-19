@@ -293,9 +293,11 @@ void PointCloud::clear()
 
   if (getParentSceneNode()) {
     for (auto const & renderable : renderables_) {
-      getParentSceneNode()->detachObject(renderable.get());
+      // even if we are attached our renderables may not necessarily also be attached
+      if (renderable.get()->isAttached()) {
+        getParentSceneNode()->detachObject(renderable.get());
+      }
     }
-    getParentSceneNode()->needUpdate();
   }
 
   renderables_.clear();
