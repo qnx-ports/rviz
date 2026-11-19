@@ -9,10 +9,10 @@ uniform vec4 highlight;
 uniform float alpha;
 
 MAIN_PARAMETERS
-IN(vec4 color, COLOR)
-IN(vec2 uv0, TEXCOORD0)
+IN(vec4 vColor, 1)
+IN(vec4 vUv, 2)
 MAIN_DECLARATION
 {
-  vec3 col = color.xyz + color.xyz * highlight.xyz;
-  circleImpl(vec4(col, alpha * color.a), uv0.x - 0.5, uv0.y - 0.5);
+  vec3 col = vColor.xyz + vColor.xyz * highlight.xyz;
+  circleImpl(vec4(col, alpha * vColor.a), vUv.x - 0.5, vUv.y - 0.5);
 }

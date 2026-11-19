@@ -7,19 +7,19 @@ uniform vec4 highlight;
 uniform float alpha;
 
 MAIN_PARAMETERS
-IN(vec4 color, COLOR)
-IN(vec2 uv0, TEXCOORD0)
+IN(vec4 vColor, 1)
+IN(vec4 vUv, 2)
 MAIN_DECLARATION
 {
-  float ax = uv0.x - 0.5;
-  float ay = uv0.y - 0.5;
+  float ax = vUv.x - 0.5;
+  float ay = vUv.y - 0.5;
 
-  float rsquared = ax*ax+ay*ay;
+  float rsquared = ax * ax + ay * ay;
   float a = (0.25 - rsquared) * 4.0;
 
-  vec3 col = mix(vec3(0.8, 0.8, 0.8) * color.xyz, color.xyz, a);
+  vec3 col = mix(vec3(0.8, 0.8, 0.8) * vColor.xyz, vColor.xyz, a);
 
   col = col + col * highlight.xyz;
   
-  gl_FragColor = vec4(col, alpha * ceil(a) * color.a);
+  gl_FragColor = vec4(col, alpha * ceil(a) * vColor.a);
 }

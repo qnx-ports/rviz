@@ -8,8 +8,8 @@ OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
 uniform vec4 pick_color;
 
 MAIN_PARAMETERS
-IN(vec2 uv0, 2)
+IN(vec4 vUv, 2)
 MAIN_DECLARATION
 {
-  circleImpl(pick_color, uv0.x - 0.5, uv0.y - 0.5);
+  circleImpl(pick_color, vUv.x - 0.5, vUv.y - 0.5);
 }

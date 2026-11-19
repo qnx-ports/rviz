@@ -9,9 +9,9 @@ uniform mat4 worldviewproj_matrix;
 
 MAIN_PARAMETERS
 IN(vec4 pos, POSITION)
-OUT(float depth, 0)
+OUT(float vDepth, 0)
 MAIN_DECLARATION
 {
     gl_Position = worldviewproj_matrix * pos;
-    depth = passDepth(pos);
+    vDepth = passDepth(pos);
 }

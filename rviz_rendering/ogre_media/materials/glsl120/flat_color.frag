@@ -7,9 +7,9 @@ uniform vec4 highlight;
 uniform float alpha;
 
 MAIN_PARAMETERS
-IN(vec4 color, COLOR)
+IN(vec4 vColor, 1)
 MAIN_DECLARATION
 {
-  vec3 col = color.xyz + color.xyz * highlight.xyz;
-  gl_FragColor = vec4(col, color.a * alpha);
+  vec3 col = vColor.xyz + vColor.xyz * highlight.xyz;
+  gl_FragColor = vec4(col, vColor.a * alpha);
 }

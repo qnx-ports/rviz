@@ -4,8 +4,8 @@ OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
 // Passes the fragment color unchanged 
 
 MAIN_PARAMETERS
-IN(vec4 color, COLOR)
+IN(vec4 vColor, 1)
 MAIN_DECLARATION
 {
-  gl_FragColor = color;
+  gl_FragColor = vColor;
 }

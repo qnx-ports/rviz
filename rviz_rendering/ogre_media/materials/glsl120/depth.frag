@@ -6,8 +6,8 @@ OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
 // Passes on the packed depth value
 
 MAIN_PARAMETERS
-IN(float depth, 0)
+IN(float vDepth, 0)
 MAIN_DECLARATION
 {
-  gl_FragColor = packDepth(depth);
+  gl_FragColor = packDepth(vDepth);
 }

@@ -1,4 +1,5 @@
-#version 120
+OGRE_NATIVE_GLSL_VERSION_DIRECTIVE
+#include "OgreUnifiedShader.h"
 
 // Computes the position of a billboard vertex so
 // the resulting quad will face a given direction given by up & normal.
@@ -11,25 +12,33 @@ uniform vec4 normal;
 uniform vec4 up;
 
 #ifdef WITH_DEPTH
-//include:
-void passDepth( vec4 pos );
+#include "pass_depth.vert"
 #endif
 
-void main()
+MAIN_PARAMETERS
+IN(vec4 ipos, POSITION)
+IN(vec4 icolor, COLOR)
+IN(vec4 iuv, TEXCOORD0)
+#ifdef WITH_DEPTH
+OUT(float vDepth, 0)
+#endif
+OUT(vec4 vColor, 1)
+OUT(vec4 vUv, 2)
+MAIN_DECLARATION
 {
   vec3 right = cross(up.xyz, normal.xyz);
-  
-  vec4 s = gl_MultiTexCoord0 * size;
+
+  vec4 s = iuv * size;
   vec3 r = s.xxx * right;
   vec3 u = s.yyy * up.xyz;
-  
-  vec4 pos = gl_Vertex + vec4( r + u, 0.0 );
-  
+
+  vec4 pos = ipos + vec4(r + u, 0.0);
+
   gl_Position = worldviewproj_matrix * pos;
-  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(0.5,0.5,0.0,0.0);
-  gl_FrontColor = gl_Color;
+  vUv = iuv + vec4(0.5, 0.5, 0.0, 0.0);
+  vColor = icolor;
 
 #ifdef WITH_DEPTH
-  passDepth( pos );
+  vDepth = passDepth(pos);
 #endif
 }

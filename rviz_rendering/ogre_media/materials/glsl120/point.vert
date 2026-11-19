@@ -13,22 +13,22 @@ uniform mat4 worldviewproj_matrix;
 uniform vec4 size;
 
 MAIN_PARAMETERS
-IN(vec4 pos, POSITION)
+IN(vec4 ipos, POSITION)
 IN(vec4 icolor, COLOR)
-IN(vec2 iuv, TEXCOORD0)
+IN(vec4 iuv, TEXCOORD0)
 #ifdef WITH_DEPTH
-OUT(float depth, 0)
+OUT(float vDepth, 0)
 #endif
-OUT(vec4 ocolor, 1)
-OUT(vec2 ouv, 2)
+OUT(vec4 vColor, 1)
+OUT(vec4 vUv, 2)
 MAIN_DECLARATION
 {
-  gl_Position = worldviewproj_matrix * pos;
+  gl_Position = worldviewproj_matrix * ipos;
   gl_PointSize = size.x;
-  ocolor = icolor;
-  ouv = iuv;
+  vColor = icolor;
+  vUv = iuv;
 
 #ifdef WITH_DEPTH
-  depth = passDepth(pos);
+  vDepth = passDepth(ipos);
 #endif
 }
