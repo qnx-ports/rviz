@@ -4,14 +4,13 @@ material rviz/PointCloudPoint
   {
     pass
     {
-      alpha_rejection greater_equal 1
       point_size_attenuation on
       point_sprites on
       vertex_program_ref   rviz/glsl120/point.vert {}
-      fragment_program_ref rviz/glsl120/flat_color_circle.frag {}
+      fragment_program_ref rviz/glsl120/flat_color.frag {}
     }
   }
-  
+
   technique depth
   {
     scheme Depth
@@ -19,10 +18,10 @@ material rviz/PointCloudPoint
     {
       point_size_attenuation on
       vertex_program_ref rviz/glsl120/point.vert(with_depth) {}
-      fragment_program_ref rviz/glsl120/depth_circle.frag {}
+      fragment_program_ref rviz/glsl120/depth.frag {}
     }
   }
-  
+
   technique selection_first_pass
   {
     scheme Pick
@@ -30,10 +29,10 @@ material rviz/PointCloudPoint
     {
       point_size_attenuation on
       vertex_program_ref rviz/glsl120/point.vert {}
-      fragment_program_ref rviz/glsl120/pickcolor_circle.frag {}
+      fragment_program_ref rviz/glsl120/pickcolor.frag {}
     }
   }
-  
+
   technique selection_second_pass
   {
     scheme Pick1
@@ -41,7 +40,7 @@ material rviz/PointCloudPoint
     {
       point_size_attenuation on
       vertex_program_ref rviz/glsl120/point.vert {}
-      fragment_program_ref rviz/glsl120/pass_color_circle.frag {}
+      fragment_program_ref rviz/glsl120/pass_color.frag {}
     }
   }
 }
